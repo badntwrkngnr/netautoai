@@ -1,0 +1,30 @@
+# Override applied on top of Infrahub's official docker-compose.yml
+# (fetched via fetch-base-compose.sh).
+#
+# Purpose: attach the user-facing Infrahub services to automation_net so
+# NGINX and the other stacks (e.g. Netbox, for the sync script) can reach
+# them by container name.
+#
+# IMPORTANT: service names in Infrahub's compose file have changed before
+# (the git agent service was renamed to "task-worker"). After running
+# fetch-base-compose.sh, check the downloaded docker-compose.yml and adjust
+# the service names below if needed.
+#
+# Note: Compose does NOT merge the "networks" list on a service -- it
+# replaces it. "default" is included below so the service still talks to
+# Infrahub's own internal services (db, cache, message queue, etc.).
+
+services:
+  infrahub-server:
+    networks:
+      - default
+      - automation_net
+
+  task-worker:
+    networks:
+      - default
+      - automation_net
+
+networks:
+  automation_net:
+    external: true

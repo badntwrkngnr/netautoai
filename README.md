@@ -28,7 +28,7 @@ provisioned via Ansible.
                  │           Proxmox + Tailscale           │
                  │                                         │
    Tailnet ──────┤  ┌────────┐  ┌─────────┐  ┌──────────┐  │
-  (MagicDNS)     │  │ NGINX  │──│ Grafana │  │  Zabbix  │  │
+  (MagicDNS)     │  │ NGINX  │──│ Grafana │──│  Zabbix  │  │
                  │  │ proxy  │  └─────────┘  └────┬─────┘  │
                  │  └───┬────┘  ┌─────────┐       │        │
                  │      │       │ Netbox  │───────┘        │
@@ -74,6 +74,17 @@ advertised by pnetlab so Docker containers can reach lab device IPs directly.
 │   ├── grafana/
 │   ├── netbox/
 │   └── infrahub/
+├── terraform/             # Nova pasta IaC
+|   ├── modules/
+|   │   └── proxmox_vm/    # Módulo genérico e reutilizável
+|   │       ├── main.tf
+|   │       ├── outputs.tf
+|   │       └── variables.tf
+|   ├── main.tf            # Ponto de entrada (chama os módulos)
+|   ├── providers.tf       # Configuração do Provider (Proxmox)
+|   ├── variables.tf       # Variáveis da raiz
+|   ├── outputs.tf         # Outputs (ex: IP final para o Ansible usar)
+|   └── terraform.tfvars   # Ignorado no .gitignore (Suas credenciais/IPs)
 ├── scripts/               # Automation helper scripts (e.g. Netbox<->Infrahub sync)
 ├── create_project.sh      # Scaffolding script for this repo layout
 └── README.md

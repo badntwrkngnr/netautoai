@@ -1,38 +1,50 @@
 services:
   zabbix-db:
-    image: postgres:16
+    image: postgres:16-alpine
     container_name: zabbix_db
     restart: unless-stopped
     env_file: .env
     volumes:
       - zabbix_db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
     networks:
       - zabbix_internal
 
   zabbix-server:
-    image: zabbix/zabbix-server-pgsql:latest
+    image: zabbix/zabbix-server-pgsql:alpine-7.4-latest
     container_name: zabbix_server
     restart: unless-stopped
     env_file: .env
     depends_on:
-      - zabbix-db
+      zabbix-db:
+        condition: service_healthy
+    volumes:
+      - zabbix_server_data:/var/lib/zabbix
+      - zabbix_snmptraps:/var/lib/zabbix/snmptraps:ro
     networks:
-      - automation_net
+      - automation_net   # needs to reach pnetlab devices for SNMP polling
       - zabbix_internal
 
   zabbix-web:
-    image: zabbix/zabbix-web-nginx-pgsql:latest
+    image: zabbix/zabbix-web-nginx-pgsql:alpine-7.4-latest
     container_name: zabbix_web
     restart: unless-stopped
     env_file: .env
+    environment:
+      ZBX_SERVER_HOST: zabbix-server
+      PHP_TZ: America/Sao_Paulo
     depends_on:
       - zabbix-server
     networks:
-      - automation_net
+      - automation_net   # exposed to NGINX
       - zabbix_internal
 
   zabbix-snmptraps:
-    image: zabbix/zabbix-snmptraps:latest
+    image: zabbix/zabbix-snmptraps:alpine-7.4-latest
     container_name: zabbix_snmptraps
     restart: unless-stopped
     ports:
@@ -40,10 +52,11 @@ services:
     volumes:
       - zabbix_snmptraps:/var/lib/zabbix/snmptraps
     networks:
-      - automation_net
+      - zabbix_internal
 
 volumes:
   zabbix_db_data:
+  zabbix_server_data:
   zabbix_snmptraps:
 
 networks:
