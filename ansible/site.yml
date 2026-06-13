@@ -1,0 +1,9 @@
+---
+- name: Bootstrap manager node
+  hosts: manager-node
+  become: true
+  roles:
+    - common
+    - docker
+    - tailscale
+    - reverse_proxy

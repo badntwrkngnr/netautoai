@@ -1,0 +1,5 @@
+---
+- name: Create shared automation_net docker network
+  community.docker.docker_network:
+    name: "{{ automation_network }}"
+    state: present

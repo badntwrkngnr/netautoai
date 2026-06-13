@@ -1,0 +1,50 @@
+services:
+  infrahub-db:
+    image: neo4j:5-community
+    container_name: infrahub_db
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - infrahub_db_data:/data
+    networks:
+      - infrahub_internal
+
+  infrahub-cache:
+    image: redis:7-alpine
+    container_name: infrahub_cache
+    restart: unless-stopped
+    networks:
+      - infrahub_internal
+
+  infrahub-server:
+    image: opsmill/infrahub:latest
+    container_name: infrahub_server
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - infrahub-db
+      - infrahub-cache
+    networks:
+      - automation_net
+      - infrahub_internal
+
+  infrahub-git-agent:
+    image: opsmill/infrahub:latest
+    container_name: infrahub_git_agent
+    restart: unless-stopped
+    env_file: .env
+    command: infrahub git-agent start
+    depends_on:
+      - infrahub-server
+    networks:
+      - automation_net
+      - infrahub_internal
+
+volumes:
+  infrahub_db_data:
+
+networks:
+  automation_net:
+    external: true
+  infrahub_internal:
+    internal: true

@@ -1,0 +1,35 @@
+---
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+      - ufw
+      - python3-pip
+    state: present
+
+- name: Enable IPv4 forwarding (needed for routing to pnetlab subnets)
+  ansible.posix.sysctl:
+    name: net.ipv4.ip_forward
+    value: "1"
+    sysctl_set: true
+    state: present
+    reload: true
+
+- name: Allow SSH and Tailscale through ufw
+  community.general.ufw:
+    rule: allow
+    name: "{{ item }}"
+  loop:
+    - OpenSSH
+
+- name: Enable ufw
+  community.general.ufw:
+    state: enabled
+    policy: deny

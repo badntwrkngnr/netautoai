@@ -1,0 +1,53 @@
+services:
+  zabbix-db:
+    image: postgres:16
+    container_name: zabbix_db
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - zabbix_db_data:/var/lib/postgresql/data
+    networks:
+      - zabbix_internal
+
+  zabbix-server:
+    image: zabbix/zabbix-server-pgsql:latest
+    container_name: zabbix_server
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - zabbix-db
+    networks:
+      - automation_net
+      - zabbix_internal
+
+  zabbix-web:
+    image: zabbix/zabbix-web-nginx-pgsql:latest
+    container_name: zabbix_web
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - zabbix-server
+    networks:
+      - automation_net
+      - zabbix_internal
+
+  zabbix-snmptraps:
+    image: zabbix/zabbix-snmptraps:latest
+    container_name: zabbix_snmptraps
+    restart: unless-stopped
+    ports:
+      - "162:1162/udp"
+    volumes:
+      - zabbix_snmptraps:/var/lib/zabbix/snmptraps
+    networks:
+      - automation_net
+
+volumes:
+  zabbix_db_data:
+  zabbix_snmptraps:
+
+networks:
+  automation_net:
+    external: true
+  zabbix_internal:
+    internal: true

@@ -1,0 +1,9 @@
+stacks_dir: /opt/stacks
+automation_network: automation_net
+
+stack_names:
+  - proxy
+  - zabbix
+  - grafana
+  - netbox
+  - infrahub

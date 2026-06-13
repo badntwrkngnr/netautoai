@@ -1,0 +1,10 @@
+# Copy this file to vault.yml and encrypt it with:
+#   ansible-vault encrypt ansible/group_vars/all/vault.yml
+#
+tailscale_authkey: "tskey-auth-XXXXXXXXXXXX"
+
+zabbix_db_password: "changeme"
+netbox_db_password: "changeme"
+netbox_secret_key: "changeme-needs-50-chars-min"
+infrahub_db_password: "changeme"
+grafana_admin_password: "changeme"

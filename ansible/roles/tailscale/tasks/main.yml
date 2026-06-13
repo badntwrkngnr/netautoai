@@ -1,0 +1,35 @@
+---
+- name: Add Tailscale apt repository key
+  ansible.builtin.get_url:
+    url: "https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.noarmor.gpg"
+    dest: /usr/share/keyrings/tailscale-archive-keyring.gpg
+    mode: "0644"
+
+- name: Add Tailscale apt repository
+  ansible.builtin.get_url:
+    url: "https://pkgs.tailscale.com/stable/debian/{{ ansible_distribution_release }}.tailscale-keyring.list"
+    dest: /etc/apt/sources.list.d/tailscale.list
+    mode: "0644"
+
+- name: Install tailscale
+  ansible.builtin.apt:
+    name: tailscale
+    state: present
+    update_cache: true
+
+- name: Enable tailscaled service
+  ansible.builtin.systemd:
+    name: tailscaled
+    enabled: true
+    state: started
+
+- name: Bring up tailscale and accept subnet routes
+  ansible.builtin.command: >
+    tailscale up
+    --authkey={{ tailscale_authkey }}
+    --accept-routes
+    --hostname=netautoai
+  register: ts_up
+  changed_when: "'Success' in ts_up.stdout or ts_up.rc == 0"
+  # NOTE: pnetlab's advertised routes still need manual approval
+  # in the Tailscale admin console the first time.

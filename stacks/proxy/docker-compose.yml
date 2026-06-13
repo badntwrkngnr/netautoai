@@ -1,0 +1,18 @@
+services:
+  nginx:
+    image: nginx:stable
+    container_name: proxy_nginx
+    restart: unless-stopped
+    ports:
+      - "8080:8080"
+      - "8081:8081"
+      - "8082:8082"
+      - "8083:8083"
+    volumes:
+      - ./conf.d:/etc/nginx/conf.d:ro
+    networks:
+      - automation_net
+
+networks:
+  automation_net:
+    external: true

@@ -1,0 +1,17 @@
+services:
+  grafana:
+    image: grafana/grafana-oss:latest
+    container_name: grafana
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - grafana_data:/var/lib/grafana
+    networks:
+      - automation_net
+
+volumes:
+  grafana_data:
+
+networks:
+  automation_net:
+    external: true

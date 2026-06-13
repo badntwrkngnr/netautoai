@@ -1,0 +1,64 @@
+services:
+  netbox-db:
+    image: postgres:16
+    container_name: netbox_db
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      - netbox_db_data:/var/lib/postgresql/data
+    networks:
+      - netbox_internal
+
+  netbox-redis:
+    image: redis:7-alpine
+    container_name: netbox_redis
+    restart: unless-stopped
+    command: ["sh", "-c", "redis-server --appendonly yes"]
+    volumes:
+      - netbox_redis_data:/data
+    networks:
+      - netbox_internal
+
+  netbox-redis-cache:
+    image: redis:7-alpine
+    container_name: netbox_redis_cache
+    restart: unless-stopped
+    networks:
+      - netbox_internal
+
+  netbox:
+    image: netboxcommunity/netbox:latest
+    container_name: netbox
+    restart: unless-stopped
+    env_file: .env
+    depends_on:
+      - netbox-db
+      - netbox-redis
+      - netbox-redis-cache
+    volumes:
+      - netbox_media:/opt/netbox/netbox/media
+    networks:
+      - automation_net
+      - netbox_internal
+
+  netbox-worker:
+    image: netboxcommunity/netbox:latest
+    container_name: netbox_worker
+    restart: unless-stopped
+    env_file: .env
+    command: /opt/netbox/venv/bin/python /opt/netbox/netbox/manage.py rqworker
+    depends_on:
+      - netbox
+    networks:
+      - netbox_internal
+
+volumes:
+  netbox_db_data:
+  netbox_redis_data:
+  netbox_media:
+
+networks:
+  automation_net:
+    external: true
+  netbox_internal:
+    internal: true
