@@ -42,7 +42,7 @@ provisioned via Ansible.
                  └───────────────────┬─────────────────────┘
                                      │
                                  tailscale0
-                                    │
+                                     │
                           ┌──────────┴───────────┐
                           │  pnetlab subnet(s)   │
                           │ (lab devices, SNMP)  │
