@@ -23,30 +23,30 @@ provisioned via Ansible.
 ## Architecture
 
 ```bash
-                 ┌───────────────────────────────────────┐
+                 ┌───────────────────────────────────────--┐
                  │           Manager VM (netautoai)        │
                  │           Proxmox + Tailscale           │
-                 │                                          │
-   Tailnet ──────┤  ┌────────┐  ┌─────────┐  ┌──────────┐ │
-  (MagicDNS)     │  │ NGINX  │──│ Grafana │  │  Zabbix  │ │
-                 │  │ proxy  │  └─────────┘  └────┬─────┘ │
-                 │  └───┬────┘  ┌─────────┐       │       │
-                 │      │       │ Netbox  │───────┘       │
-                 │      │       └────┬────┘               │
+                 │                                         │
+   Tailnet ──────┤  ┌────────┐  ┌─────────┐  ┌──────────┐  │
+  (MagicDNS)     │  │ NGINX  │──│ Grafana │  │  Zabbix  │  │
+                 │  │ proxy  │  └─────────┘  └────┬─────┘  │
+                 │  └───┬────┘  ┌─────────┐       │        │
+                 │      │       │ Netbox  │───────┘        │
+                 │      │       └────┬────┘                │
                  │      │            │                     │
                  │      │       ┌────▼────┐                │
-                 │      └───────│ Infrahub │               │
+                 │      └───────│ Infrahub│                │
                  │              └─────────┘                │
-                 │                                          │
-                 │     automation_net (shared docker net)   │
+                 │                                         │
+                 │     automation_net (shared docker net)  │
                  └───────────────────┬─────────────────────┘
-                                      │
-                                tailscale0
-                                      │
-                          ┌───────────┴───────────┐
-                          │   pnetlab subnet(s)    │
-                          │  (lab devices, SNMP)   │
-                          └────────────────────────┘
+                                     │
+                                 tailscale0
+                                    │
+                          ┌──────────┴───────────┐
+                          │  pnetlab subnet(s)   │
+                          │ (lab devices, SNMP)  │
+                          └──────────────────────┘
 ```
 
 The manager VM joins the same Tailscale network (tailnet) as the rest of the
