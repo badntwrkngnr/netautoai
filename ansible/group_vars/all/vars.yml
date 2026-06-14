@@ -3,7 +3,7 @@ automation_network: automation_net
 
 stack_names:
   - proxy
-#  - zabbix
+  - zabbix
   - grafana
-#  - netbox
-#  - infrahub
+  - netbox
+  - infrahub
