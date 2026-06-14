@@ -18,18 +18,20 @@ docker compose -f docker-compose.yml -f docker-compose.override.yml up -d
 ## What the override does
 
 `docker-compose.override.yml` attaches the Infrahub server and task-worker
-containers to `automation_net`, the network shared with NGINX, Netbox,
-Zabbix, and Grafana. This lets:
+containers to `automation_net`, the network shared with Traefik, Netbox,
+Zabbix, and Grafana, and adds Traefik labels so the server is reachable on
+`http://netautoai:8083`. This lets:
 
-- NGINX proxy to `infrahub-server:8000`
+- Traefik route to `infrahub-server` on port 8000
 - Your Netbox -> Infrahub sync script (in `scripts/`) reach both
   `netbox:8080` and `infrahub-server:8000` by name
 
 ## Things to check after fetching
 
 - Confirm the server/worker service names match what's referenced in
-  `docker-compose.override.yml` and in `stacks/proxy/conf.d/infrahub.conf`
-  (these have been renamed before).
+  `docker-compose.override.yml` (these have been renamed before -- the git
+  agent service became "task-worker").
 - Confirm the internal port Infrahub's server listens on (currently 8000)
-  matches the NGINX upstream config.
+  matches the `traefik.http.services.infrahub.loadbalancer.server.port`
+  label.
 - Review resource usage -- this is the heaviest stack in the project.

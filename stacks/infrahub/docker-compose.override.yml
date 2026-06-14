@@ -19,6 +19,12 @@ services:
     networks:
       - default
       - automation_net
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=automation_net"
+      - "traefik.http.routers.infrahub.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.infrahub.entrypoints=infrahub"
+      - "traefik.http.services.infrahub.loadbalancer.server.port=8000"
 
   task-worker:
     networks:

@@ -39,8 +39,14 @@ services:
       PHP_TZ: America/Sao_Paulo
     depends_on:
       - zabbix-server
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=automation_net"
+      - "traefik.http.routers.zabbix.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.zabbix.entrypoints=zabbix"
+      - "traefik.http.services.zabbix.loadbalancer.server.port=8080"
     networks:
-      - automation_net   # exposed to NGINX
+      - automation_net   # exposed to Traefik
       - zabbix_internal
 
   zabbix-snmptraps:

@@ -1,15 +1,36 @@
 services:
-  nginx:
-    image: nginx:stable
-    container_name: proxy_nginx
+  traefik:
+    image: traefik:v3.3
+    container_name: proxy_traefik
     restart: unless-stopped
+    command:
+      - --providers.docker=true
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.network=automation_net
+      - --entrypoints.grafana.address=:8080
+      - --entrypoints.netbox.address=:8081
+      - --entrypoints.zabbix.address=:8082
+      - --entrypoints.infrahub.address=:8083
+      - --entrypoints.traefik.address=:8090
+      - --api.dashboard=true
+      - --api.insecure=true
+      - --log.level=INFO
     ports:
       - "8080:8080"
       - "8081:8081"
       - "8082:8082"
       - "8083:8083"
+      - "8090:8090"
     volumes:
-      - ./conf.d:/etc/nginx/conf.d:ro
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    labels:
+      # Exposes Traefik's own dashboard/API on the :traefik entrypoint.
+      # --api.insecure=true is fine here since :8090 is only reachable
+      # over the tailnet (ufw only opens tailscale0 inbound).
+      - "traefik.enable=true"
+      - "traefik.http.routers.dashboard.rule=PathPrefix(`/`)"
+      - "traefik.http.routers.dashboard.entrypoints=traefik"
+      - "traefik.http.routers.dashboard.service=api@internal"
     networks:
       - automation_net
 

@@ -11,3 +11,6 @@ ansible/group_vars/all/vault.yml
 
 # Docker
 stacks/**/.env
+
+# AI
+.kimchi/
