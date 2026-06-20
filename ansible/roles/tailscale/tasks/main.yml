@@ -39,15 +39,9 @@
   when: >
     ts_status.rc != 0 or
     (ts_status.stdout | from_json).BackendState != "Running"
-  # NOTE: pnetlab's advertised routes still need manual approval
-  # in the Tailscale admin console the first time.
 
 - name: Allow all traffic on the tailscale interface
   community.general.ufw:
     rule: allow
     interface: tailscale0
     direction: in
-  # tailscale0 only exists once 'tailscale up' has run, so this must
-  # come after it. Scope is the tailnet only -- this is what lets
-  # NGINX (8080-8083) and the SNMP traps listener (162/udp) be reached
-  # from other tailnet nodes without opening those ports globally.

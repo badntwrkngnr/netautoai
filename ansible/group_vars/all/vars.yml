@@ -1,9 +1,3 @@
-stacks_dir: /opt/stacks
-automation_network: automation_net
-
-stack_names:
-  - proxy
-  - zabbix
-  - grafana
-  - netbox
-  - infrahub
+# k3s_version: "v1.31.4+k3s1"   # pin for reproducible installs; omit for latest stable
+# k3s_channel: stable
+# k3s_disable: []                 # e.g. ["traefik"] once you settle on an ingress strategy

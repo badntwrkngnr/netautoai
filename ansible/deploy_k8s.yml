@@ -1,0 +1,61 @@
+---
+- name: Deploy service stacks
+  hosts: manager-node
+  become: true
+  tasks:
+    - name: Install rsync
+      ansible.builtin.apt:
+        name: rsync
+        state: present
+        update_cache: yes
+
+    - name: Install Docker Engine
+      ansible.builtin.apt:
+        name: docker.io
+        state: present
+        update_cache: yes
+
+    - name: Create Docker CLI plugins directory
+      ansible.builtin.file:
+        path: /usr/libexec/docker/cli-plugins
+        state: directory
+        mode: '0755'
+
+    - name: Download Docker Compose V2 plugin
+      ansible.builtin.get_url:
+        url: "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-linux-{{ ansible_facts['architecture'] }}"
+        dest: /usr/libexec/docker/cli-plugins/docker-compose
+        mode: '0755'
+
+    - name: Ensure Docker service is running
+      ansible.builtin.systemd:
+        name: docker
+        state: started
+        enabled: yes
+
+    - name: Create shared automation_net docker network
+      community.docker.docker_network:
+        name: "{{ automation_network }}"
+        state: present
+
+    - name: Ensure base stacks directory exists
+      ansible.builtin.file:
+        path: "{{ stacks_dir }}"
+        state: directory
+        mode: '0755'
+        owner: root
+        group: root
+
+    - name: Sync stack directories
+      ansible.posix.synchronize:
+        src: "../stacks/{{ item }}/"
+        dest: "{{ stacks_dir }}/{{ item }}/"
+        delete: true
+      loop: "{{ stack_names }}"
+
+    - name: Deploy compose stacks
+      community.docker.docker_compose_v2:
+        project_src: "{{ stacks_dir }}/{{ item }}"
+        state: present
+        pull: missing
+      loop: "{{ stack_names }}"

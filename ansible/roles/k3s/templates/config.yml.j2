@@ -1,0 +1,10 @@
+# Managed by Ansible. Editing this file triggers a k3s restart (see handlers).
+write-kubeconfig-mode: "0644"
+tls-san:
+  - "{{ ansible_host }}"
+{% if k3s_disable is defined and k3s_disable | length > 0 %}
+disable:
+{% for item in k3s_disable %}
+  - {{ item }}
+{% endfor %}
+{% endif %}
