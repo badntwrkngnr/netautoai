@@ -1,0 +1,57 @@
+# Overrides for opsmill/infrahub-helm chart 4.25.1.
+# Only keys listed here are overridden -- Helm deep-merges maps against the
+# chart's defaults, so anything not mentioned (INFRAHUB_DB_TYPE, ports,
+# probes, etc.) stays at its chart default.
+
+redis:
+  master:
+    persistence:
+      enabled: false   # pure cache (nameOverride: cache, auth disabled) -- nothing worth persisting here
+
+neo4j:
+  neo4j:
+    password: "{{ infrahub_neo4j_password }}"
+    resources:
+      requests:
+        cpu: "500m"      # chart default is 2 CPU / 4Gi -- too much for an 8GB single-node VM running 4 other stacks
+        memory: "1Gi"
+  volumes:
+    data:
+      mode: "defaultStorageClass"
+      defaultStorageClass:
+        accessModes:
+          - ReadWriteOnce
+        requests:
+          storage: 5Gi
+
+rabbitmq:
+  auth:
+    password: "{{ infrahub_rabbitmq_password }}"
+  persistence:
+    enabled: true
+
+prefect-server:
+  postgresql:
+    primary:
+      persistence:
+        enabled: true
+
+infrahubServer:
+  ingress:
+    enabled: false   # routed instead via k8s/infrahub/ingressroute.yaml on the :infrahub entrypoint
+  infrahubServer:
+    env:
+      INFRAHUB_PRODUCTION: "true"
+      INFRAHUB_SECURITY_SECRET_KEY: "{{ infrahub_security_secret_key }}"
+      INFRAHUB_INITIAL_ADMIN_TOKEN: "{{ infrahub_admin_token }}"
+      INFRAHUB_INITIAL_AGENT_TOKEN: "{{ infrahub_agent_token }}"
+      # INFRAHUB_ALLOW_ANONYMOUS_ACCESS stays "true" (chart default) -- fine on a
+      # tailnet-only homelab, but know it's there if you ever expose this further.
+
+infrahubTaskWorker:
+  replicas: 1   # chart default is 2 -- halving to fit your node's resources
+  infrahubTaskWorker:
+    env:
+      INFRAHUB_PRODUCTION: "true"
+      INFRAHUB_API_TOKEN: "{{ infrahub_admin_token }}"        # must match infrahubServer's INFRAHUB_INITIAL_ADMIN_TOKEN
+      INFRAHUB_INITIAL_AGENT_TOKEN: "{{ infrahub_agent_token }}"

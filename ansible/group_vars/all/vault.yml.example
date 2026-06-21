@@ -3,8 +3,14 @@
 #
 tailscale_authkey: "tskey-auth-XXXXXXXXXXXX"
 
-zabbix_db_password: "changeme"
-netbox_db_password: "changeme"
+zabbix_db_password: "zabbix"
+netbox_db_password: "zabbix"
+netbox_redis_password: "netbox"
 netbox_secret_key: "changeme-needs-50-chars-min"
-infrahub_db_password: "changeme"
-grafana_admin_password: "changeme"
+grafana_admin_password: "grafana"
+infrahub_db_password: "infrahub"
+infrahub_security_secret_key: "changeme"   # generate: python3 -c "import uuid; print(uuid.uuid4())"
+infrahub_admin_token: "changeme"           # generate: python3 -c "import uuid; print(uuid.uuid4())"
+infrahub_agent_token: "changeme"           # generate: python3 -c "import uuid; print(uuid.uuid4())"
+infrahub_neo4j_password: "infrahub_neo4j"
+infrahub_rabbitmq_password: "infrahub_rabbitmq"

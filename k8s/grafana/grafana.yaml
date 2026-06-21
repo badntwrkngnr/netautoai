@@ -1,0 +1,78 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: grafana-data
+  namespace: automation
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: grafana
+  namespace: automation
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels: { app: grafana }
+  template:
+    metadata:
+      labels: { app: grafana }
+    spec:
+      containers:
+        - name: grafana
+          image: grafana/grafana-oss:latest
+          ports:
+            - containerPort: 3000
+          env:
+            - name: GF_INSTALL_PLUGINS
+              value: "alexanderzobnin-zabbix-app"
+            - name: GF_SECURITY_ADMIN_USER
+              valueFrom: { secretKeyRef: { name: grafana-admin, key: admin-user } }
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              valueFrom: { secretKeyRef: { name: grafana-admin, key: admin-password } }
+          volumeMounts:
+            - name: grafana-data
+              mountPath: /var/lib/grafana
+          readinessProbe:
+            httpGet: { path: /api/health, port: 3000 }
+            initialDelaySeconds: 10
+          livenessProbe:
+            httpGet: { path: /api/health, port: 3000 }
+            initialDelaySeconds: 30
+          # NOTE: your compose mounted ./provisioning:/etc/grafana/provisioning:ro
+          # (datasources/dashboards-as-code). I don't have that directory's
+          # contents -- add it back as a ConfigMap + volumeMount once you share it,
+          # otherwise you'll be reconfiguring datasources by hand after first boot.
+      volumes:
+        - name: grafana-data
+          persistentVolumeClaim: { claimName: grafana-data }
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: grafana
+  namespace: automation
+spec:
+  selector: { app: grafana }
+  ports:
+    - port: 3000
+      targetPort: 3000
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: grafana
+  namespace: automation
+spec:
+  entryPoints: [grafana]
+  routes:
+    - match: PathPrefix(`/`)
+      kind: Rule
+      services:
+        - { name: grafana, port: 3000 }

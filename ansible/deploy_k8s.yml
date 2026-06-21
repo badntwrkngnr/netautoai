@@ -1,61 +1,78 @@
 ---
-- name: Deploy service stacks
-  hosts: manager-node
-  become: true
+- name: Deploy Kubernetes manifests
+  hosts: localhost
+  connection: local
+  become: false
+  vars:
+    kubeconfig_path: "{{ playbook_dir }}/.kube/manager-node-k3s.yaml"
   tasks:
-    - name: Install rsync
-      ansible.builtin.apt:
-        name: rsync
+    - name: Apply namespace
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
         state: present
-        update_cache: yes
+        src: "{{ playbook_dir }}/../k8s/namespaces.yml"
 
-    - name: Install Docker Engine
-      ansible.builtin.apt:
-        name: docker.io
+    - name: Customize bundled Traefik
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
         state: present
-        update_cache: yes
+        src: "{{ playbook_dir }}/../k8s/traefik/helmchartconfig.yaml"
 
-    - name: Create Docker CLI plugins directory
+    - name: Render and apply application secrets
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition: "{{ lookup('template', item) }}"
+      loop:
+        - templates/grafana-secret.yaml.j2
+        - templates/zabbix-secret.yaml.j2
+        - templates/netbox-secret.yaml.j2
+      no_log: true
+
+    - name: Apply Grafana manifests
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        src: "{{ playbook_dir }}/../k8s/grafana/grafana.yaml"
+
+    - name: Apply Zabbix manifests
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        src: "{{ playbook_dir }}/../k8s/zabbix/zabbix.yaml"
+
+    - name: Apply Netbox manifests
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        src: "{{ playbook_dir }}/../k8s/netbox/netbox.yaml"
+
+- name: Ensure empty Docker config for anonymous OCI Helm pulls
       ansible.builtin.file:
-        path: /usr/libexec/docker/cli-plugins
+        path: "{{ playbook_dir }}/.docker-empty"
         state: directory
-        mode: '0755'
+        mode: "0700"
 
-    - name: Download Docker Compose V2 plugin
-      ansible.builtin.get_url:
-        url: "https://github.com/docker/compose/releases/download/v2.24.6/docker-compose-linux-{{ ansible_facts['architecture'] }}"
-        dest: /usr/libexec/docker/cli-plugins/docker-compose
-        mode: '0755'
+    - name: Write empty Docker config
+      ansible.builtin.copy:
+        dest: "{{ playbook_dir }}/.docker-empty/config.json"
+        content: "{}"
+        mode: "0600"
 
-    - name: Ensure Docker service is running
-      ansible.builtin.systemd:
-        name: docker
-        state: started
-        enabled: yes
+- name: Render Infrahub Helm values
+      ansible.builtin.template:
+        src: templates/infrahub-values.yaml.j2
+        dest: "{{ playbook_dir }}/.infrahub-values.yaml"
+        mode: "0600"
+      no_log: true
 
-    - name: Create shared automation_net docker network
-      community.docker.docker_network:
-        name: "{{ automation_network }}"
-        state: present
-
-    - name: Ensure base stacks directory exists
-      ansible.builtin.file:
-        path: "{{ stacks_dir }}"
-        state: directory
-        mode: '0755'
-        owner: root
-        group: root
-
-    - name: Sync stack directories
-      ansible.posix.synchronize:
-        src: "../stacks/{{ item }}/"
-        dest: "{{ stacks_dir }}/{{ item }}/"
-        delete: true
-      loop: "{{ stack_names }}"
-
-    - name: Deploy compose stacks
-      community.docker.docker_compose_v2:
-        project_src: "{{ stacks_dir }}/{{ item }}"
-        state: present
-        pull: missing
-      loop: "{{ stack_names }}"
+    - name: Install/upgrade Infrahub via Helm
+      kubernetes.core.helm:
+        kubeconfig: "{{ kubeconfig_path }}"
+        name: infrahub
+        chart_ref: oci://registry.opsmill.io/opsmill/chart/infrahub
+        release_namespace: automation
+        values_files:
+          - "{{ playbook_dir }}/.infrahub-values.yaml"
+      environment:
+        DOCKER_CONFIG: "{{ playbook_dir }}/.docker-empty"

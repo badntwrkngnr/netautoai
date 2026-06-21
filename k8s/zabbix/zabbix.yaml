@@ -1,0 +1,150 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: zabbix-db-data, namespace: automation }
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources: { requests: { storage: 5Gi } }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: zabbix-server-data, namespace: automation }
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources: { requests: { storage: 1Gi } }
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: zabbix-snmptraps-data, namespace: automation }
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources: { requests: { storage: 512Mi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: zabbix-db, namespace: automation }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: zabbix-db } }
+  template:
+    metadata: { labels: { app: zabbix-db } }
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          ports: [{ containerPort: 5432 }]
+          env:
+            - { name: POSTGRES_USER, value: zabbix }
+            - { name: POSTGRES_DB, value: zabbix }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: zabbix-secrets, key: db-password } }
+          volumeMounts:
+            - { name: data, mountPath: /var/lib/postgresql/data }
+          readinessProbe:
+            exec: { command: ["pg_isready", "-U", "zabbix", "-d", "zabbix"] }
+      volumes:
+        - { name: data, persistentVolumeClaim: { claimName: zabbix-db-data } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: zabbix-db, namespace: automation }
+spec:
+  selector: { app: zabbix-db }
+  ports: [{ port: 5432, targetPort: 5432 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: zabbix-server, namespace: automation }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: zabbix-server } }
+  template:
+    metadata: { labels: { app: zabbix-server } }
+    spec:
+      containers:
+        - name: zabbix-server
+          image: zabbix/zabbix-server-pgsql:alpine-7.4-latest
+          env:
+            - { name: DB_SERVER_HOST, value: zabbix-db }
+            - { name: POSTGRES_USER, value: zabbix }
+            - { name: POSTGRES_DB, value: zabbix }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: zabbix-secrets, key: db-password } }
+          volumeMounts:
+            - { name: server-data, mountPath: /var/lib/zabbix }
+            - { name: snmptraps, mountPath: /var/lib/zabbix/snmptraps, readOnly: true }
+      volumes:
+        - { name: server-data, persistentVolumeClaim: { claimName: zabbix-server-data } }
+        - { name: snmptraps, persistentVolumeClaim: { claimName: zabbix-snmptraps-data } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: zabbix-server, namespace: automation }
+spec:
+  selector: { app: zabbix-server }
+  ports: [{ port: 10051, targetPort: 10051 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: zabbix-web, namespace: automation }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: zabbix-web } }
+  template:
+    metadata: { labels: { app: zabbix-web } }
+    spec:
+      containers:
+        - name: zabbix-web
+          image: zabbix/zabbix-web-nginx-pgsql:alpine-7.4-latest
+          ports: [{ containerPort: 8080 }]
+          env:
+            - { name: ZBX_SERVER_HOST, value: zabbix-server }
+            - { name: PHP_TZ, value: America/Sao_Paulo }
+            - { name: DB_SERVER_HOST, value: zabbix-db }
+            - { name: POSTGRES_USER, value: zabbix }
+            - { name: POSTGRES_DB, value: zabbix }
+            - name: POSTGRES_PASSWORD
+              valueFrom: { secretKeyRef: { name: zabbix-secrets, key: db-password } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: zabbix-web, namespace: automation }
+spec:
+  selector: { app: zabbix-web }
+  ports: [{ port: 8080, targetPort: 8080 }]
+---
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata: { name: zabbix, namespace: automation }
+spec:
+  entryPoints: [zabbix]
+  routes:
+    - match: PathPrefix(`/`)
+      kind: Rule
+      services: [{ name: zabbix-web, port: 8080 }]
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: zabbix-snmptraps, namespace: automation }
+spec:
+  replicas: 1
+  selector: { matchLabels: { app: zabbix-snmptraps } }
+  template:
+    metadata: { labels: { app: zabbix-snmptraps } }
+    spec:
+      containers:
+        - name: zabbix-snmptraps
+          image: zabbix/zabbix-snmptraps:alpine-7.4-latest
+          ports: [{ containerPort: 1162, protocol: UDP }]
+          volumeMounts:
+            - { name: traps, mountPath: /var/lib/zabbix/snmptraps }
+      volumes:
+        - { name: traps, persistentVolumeClaim: { claimName: zabbix-snmptraps-data } }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: zabbix-snmptraps, namespace: automation }
+spec:
+  type: LoadBalancer   # k3s's bundled ServiceLB binds this on the node, same as your "162:1162/udp" mapping today
+  selector: { app: zabbix-snmptraps }
+  ports: [{ name: snmptrap, protocol: UDP, port: 162, targetPort: 1162 }]
