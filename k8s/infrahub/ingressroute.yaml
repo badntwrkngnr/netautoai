@@ -9,5 +9,5 @@ spec:
     - match: PathPrefix(`/`)
       kind: Rule
       services:
-        - name: infrahub-server   # verify after install: kubectl -n automation get svc | grep infrahub
+        - name: infrahub-infrahub-server
           port: 8000

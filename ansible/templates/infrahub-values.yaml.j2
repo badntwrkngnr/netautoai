@@ -14,7 +14,7 @@ neo4j:
     resources:
       requests:
         cpu: "500m"      # chart default is 2 CPU / 4Gi -- too much for an 8GB single-node VM running 4 other stacks
-        memory: "1Gi"
+        memory: "2Gi"
   volumes:
     data:
       mode: "defaultStorageClass"

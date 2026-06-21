@@ -5,6 +5,11 @@
   become: false
   vars:
     kubeconfig_path: "{{ playbook_dir }}/.kube/manager-node-k3s.yaml"
+  pre_tasks:
+    - name: Ensure python kubernetes client is installed
+      ansible.builtin.pip:
+        name: kubernetes
+        extra_args: --break-system-packages
   tasks:
     - name: Apply namespace
       kubernetes.core.k8s:
@@ -47,7 +52,7 @@
         state: present
         src: "{{ playbook_dir }}/../k8s/netbox/netbox.yaml"
 
-- name: Ensure empty Docker config for anonymous OCI Helm pulls
+    - name: Ensure empty Docker config for anonymous OCI Helm pulls
       ansible.builtin.file:
         path: "{{ playbook_dir }}/.docker-empty"
         state: directory
@@ -59,7 +64,7 @@
         content: "{}"
         mode: "0600"
 
-- name: Render Infrahub Helm values
+    - name: Render Infrahub Helm values
       ansible.builtin.template:
         src: templates/infrahub-values.yaml.j2
         dest: "{{ playbook_dir }}/.infrahub-values.yaml"
@@ -76,3 +81,9 @@
           - "{{ playbook_dir }}/.infrahub-values.yaml"
       environment:
         DOCKER_CONFIG: "{{ playbook_dir }}/.docker-empty"
+    
+    - name: Apply Infrahub IngressRoute
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        src: "{{ playbook_dir }}/../k8s/infrahub/ingressroute.yaml"
