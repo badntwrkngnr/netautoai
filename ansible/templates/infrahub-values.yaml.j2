@@ -38,20 +38,26 @@ prefect-server:
 
 infrahubServer:
   ingress:
-    enabled: false   # routed instead via k8s/infrahub/ingressroute.yaml on the :infrahub entrypoint
+    enabled: false
   infrahubServer:
     env:
       INFRAHUB_PRODUCTION: "true"
       INFRAHUB_SECURITY_SECRET_KEY: "{{ infrahub_security_secret_key }}"
       INFRAHUB_INITIAL_ADMIN_TOKEN: "{{ infrahub_admin_token }}"
       INFRAHUB_INITIAL_AGENT_TOKEN: "{{ infrahub_agent_token }}"
-      # INFRAHUB_ALLOW_ANONYMOUS_ACCESS stays "true" (chart default) -- fine on a
-      # tailnet-only homelab, but know it's there if you ever expose this further.
+      INFRAHUB_DB_USERNAME: neo4j
+      INFRAHUB_DB_PASSWORD: "{{ infrahub_neo4j_password }}"
+      INFRAHUB_BROKER_USERNAME: infrahub
+      INFRAHUB_BROKER_PASSWORD: "{{ infrahub_rabbitmq_password }}"
 
 infrahubTaskWorker:
-  replicas: 1   # chart default is 2 -- halving to fit your node's resources
+  replicas: 1
   infrahubTaskWorker:
     env:
       INFRAHUB_PRODUCTION: "true"
-      INFRAHUB_API_TOKEN: "{{ infrahub_admin_token }}"        # must match infrahubServer's INFRAHUB_INITIAL_ADMIN_TOKEN
+      INFRAHUB_API_TOKEN: "{{ infrahub_admin_token }}"
       INFRAHUB_INITIAL_AGENT_TOKEN: "{{ infrahub_agent_token }}"
+      INFRAHUB_DB_USERNAME: neo4j
+      INFRAHUB_DB_PASSWORD: "{{ infrahub_neo4j_password }}"
+      INFRAHUB_BROKER_USERNAME: infrahub
+      INFRAHUB_BROKER_PASSWORD: "{{ infrahub_rabbitmq_password }}"
