@@ -15,6 +15,7 @@ ansible/.kube/
 
 # Infrahub
 ansible/.infrahub-values.yaml
+ansible/.infrahub-values.yaml.example
 
 # AI
 .kimchi/

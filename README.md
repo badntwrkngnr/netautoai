@@ -15,7 +15,7 @@ declarative infrastructure.
 | **Infrahub** | Graph-based source of truth, synced from Netbox          | Official Helm chart       |
 | **Traefik**  | Ingress controller, bundled with k3s                     | k3s built-in (customized) |
 
-All services run as Kubernetes workloads in the `automation` namespace on a single-node k3s cluster, provisioned via Terraform and bootstrapped/deployed via Ansible.
+All services run as Kubernetes workloads in the `automation` namespace on a single-node k3s cluster, provisioned via Terraform and bootstrapped/deployed via Ansible. Kubernetes manifests for Netbox, Zabbix, and Grafana include resource requests/limits and liveness/readiness probes to improve stability.
 
 ## Architecture
 
@@ -83,11 +83,25 @@ Storage is handled by k3s's bundled `local-path` provisioner — every stateful 
 
 - A Proxmox host (`homelab`) able to run the manager VM
 - [Terraform](https://www.terraform.io/) and [Ansible](https://docs.ansible.com/) installed on your workstation
-- The `kubernetes.core` Ansible collection: `ansible-galaxy collection install -r ansible/requirements.yml`
+- Ansible collections (`ansible.posix`, `community.general`, `kubernetes.core`): `ansible-galaxy collection install -r ansible/collections/requirements.yml`
 - [Helm](https://helm.sh/) installed locally (useful for inspecting/debugging releases, e.g. `helm get values infrahub -n automation`)
 - `kubectl` installed locally
 - A Tailscale account, with the manager VM and pnetlab joined to the tailnet
 - Pnetlab advertising the lab subnet(s) as Tailscale routes
+
+## Validation
+
+Before running a full build, validate the configuration files:
+
+```bash
+# Terraform
+cd terraform
+terraform validate
+terraform fmt -check
+
+# Ansible
+cd ansible && ansible-playbook --syntax-check -i inventory/hosts.yml site.yml && ansible-playbook --syntax-check -i inventory/hosts.yml deploy_k8s.yml
+```
 
 ## Setup
 
@@ -99,6 +113,8 @@ Storage is handled by k3s's bundled `local-path` provisioner — every stateful 
    terraform init
    terraform apply
 ```
+
+`terraform.tfvars` is excluded from git tracking (see `.gitignore`) to prevent committing secrets. Sensitive variables such as `proxmox_api_token`, `proxmox_ssh_password`, and `ci_password` are marked `sensitive = true` in `terraform/variables.tf` so they are redacted from plan and apply output.
 
 See [`terraform/README.md`](terraform/README.md) for Proxmox-side prerequisites. Note the IP from `terraform output manager_vm_ipv4_addresses` for the first Ansible run.
 

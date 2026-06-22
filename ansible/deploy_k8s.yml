@@ -7,9 +7,21 @@
     kubeconfig_path: "{{ playbook_dir }}/.kube/manager-node-k3s.yaml"
   pre_tasks:
     - name: Ensure python kubernetes client is installed
-      ansible.builtin.pip:
-        name: kubernetes
-        extra_args: --break-system-packages
+      block:
+        - name: Try installing without --break-system-packages
+          ansible.builtin.pip:
+            name:
+              - kubernetes
+              - jsonpatch
+            state: present
+      rescue:
+        - name: Retry with --break-system-packages
+          ansible.builtin.pip:
+            name:
+              - kubernetes
+              - jsonpatch
+            state: present
+            extra_args: --break-system-packages
   tasks:
     - name: Apply namespace
       kubernetes.core.k8s:

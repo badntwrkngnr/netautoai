@@ -16,6 +16,7 @@
     name: tailscale
     state: present
     update_cache: true
+  notify: Restart tailscaled
 
 - name: Enable tailscaled service
   ansible.builtin.systemd:
@@ -29,16 +30,27 @@
   changed_when: false
   failed_when: false
 
+- name: Check Tailscale authentication status
+  ansible.builtin.command: tailscale status --peers=false
+  register: ts_auth_status
+  changed_when: false
+  failed_when: false
+
 - name: Bring up tailscale and accept subnet routes
-  ansible.builtin.command: >
-    tailscale up
-    --authkey={{ tailscale_authkey }}
-    --accept-routes
-    --accept-dns=true
-    --hostname=netautoai
+  ansible.builtin.command:
+    cmd: >
+      tailscale up
+      --authkey={{ tailscale_authkey }}
+      --accept-routes
+      --accept-dns=true
+      --hostname=netautoai
+  register: tailscale_up_result
+  failed_when: tailscale_up_result.rc != 0
   when: >
+    ts_auth_status.rc != 0 or
+    'logged out' in ts_auth_status.stdout | lower or
     ts_status.rc != 0 or
-    (ts_status.stdout | from_json).BackendState != "Running"
+    (ts_status.stdout | from_json).BackendState | default('') != "Running"
 
 - name: Allow all traffic on the tailscale interface
   community.general.ufw:

@@ -16,8 +16,8 @@ provider "proxmox" {
 
   ssh {
     # Change agent to false
-    agent       = false
-    username    = var.proxmox_ssh_username
-    password    = var.proxmox_ssh_password
+    agent    = false
+    username = var.proxmox_ssh_username
+    password = var.proxmox_ssh_password
   }
 }

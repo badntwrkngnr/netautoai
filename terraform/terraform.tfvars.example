@@ -1,0 +1,25 @@
+proxmox_endpoint  = "https://your-proxmox-host:8006/"
+proxmox_api_token = "root@pam!your-token-name=YOUR-API-TOKEN-UUID"
+proxmox_node      = "your-node-name"
+proxmox_insecure  = false
+proxmox_ssh_username = "root"
+proxmox_ssh_password = "CHANGEME"
+
+datastore_id   = "local"
+network_bridge = "vmbr0"
+
+vm_name      = "netautoai"
+vm_id        = 9100
+vm_cores     = 4
+vm_memory    = 8192
+vm_disk_size = 32
+
+vm_ip_address = "192.168.1.100/24"
+vm_ip_gateway = "192.168.1.1"
+
+dns_servers = ["1.1.1.1", "8.8.8.8"]
+
+ci_user = "debian"
+ssh_public_keys = [
+  "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAI... your-email@example.com"
+]
