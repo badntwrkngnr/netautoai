@@ -4,6 +4,8 @@
 tailscale_authkey: "tskey-auth-XXXXXXXXXXXX"
 
 zabbix_db_password: "zabbix"
+netbox_superuser_password: "admin"
+netbox_superuser_api_token: "changeme"   # generate: python3 -c "import secrets; print(secrets.token_hex(20))"
 netbox_db_password: "zabbix"
 netbox_redis_password: "netbox"
 netbox_secret_key: "changeme-needs-50-chars-min"

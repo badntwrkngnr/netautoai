@@ -161,6 +161,14 @@ spec:
           image: docker.io/netboxcommunity/netbox:v4.6-5.0.1
           ports: [{ containerPort: 8080 }]
           env:
+            - name: SUPERUSER_NAME
+              value: admin
+            - name: SUPERUSER_EMAIL
+              value: admin@netautoai.local
+            - name: SUPERUSER_PASSWORD
+              valueFrom: { secretKeyRef: { name: netbox-secrets, key: superuser-password } }
+            - name: SUPERUSER_API_TOKEN
+              valueFrom: { secretKeyRef: { name: netbox-secrets, key: superuser-api-token } }
             - { name: DB_HOST, value: netbox-postgres }
             - { name: DB_NAME, value: netbox }
             - { name: DB_USER, value: netbox }
@@ -228,6 +236,14 @@ spec:
           image: docker.io/netboxcommunity/netbox:v4.6-5.0.1
           command: ["/opt/netbox/venv/bin/python", "/opt/netbox/netbox/manage.py", "rqworker"]
           env:
+            - name: SUPERUSER_NAME
+              value: admin
+            - name: SUPERUSER_EMAIL
+              value: admin@netautoai.local
+            - name: SUPERUSER_PASSWORD
+              valueFrom: { secretKeyRef: { name: netbox-secrets, key: superuser-password } }
+            - name: SUPERUSER_API_TOKEN
+              valueFrom: { secretKeyRef: { name: netbox-secrets, key: superuser-api-token } }
             - { name: DB_HOST, value: netbox-postgres }
             - { name: DB_NAME, value: netbox }
             - { name: DB_USER, value: netbox }
