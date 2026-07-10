@@ -57,3 +57,4 @@
     rule: allow
     interface: tailscale0
     direction: in
+  become: true

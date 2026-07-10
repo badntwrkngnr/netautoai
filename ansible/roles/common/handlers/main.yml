@@ -1,0 +1,13 @@
+---
+- name: restart systemd-networkd
+  ansible.builtin.systemd:
+    name: systemd-networkd
+    state: restarted
+
+- name: save iptables rules
+  ansible.builtin.shell:
+    cmd: iptables-save > /etc/iptables/rules.v4
+
+- name: reload systemd
+  ansible.builtin.systemd:
+    daemon_reload: true
