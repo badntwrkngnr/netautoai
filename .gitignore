@@ -11,7 +11,10 @@ ansible/.docker-empty/
 *.retry
 
 # K8s
+.kube/
 ansible/.kube/
+**/.kube/
+*.kubeconfig
 
 # Infrahub
 ansible/.infrahub-values.yaml
