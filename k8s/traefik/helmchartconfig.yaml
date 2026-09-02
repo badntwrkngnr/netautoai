@@ -26,6 +26,11 @@ spec:
         expose: { default: true }
         exposedPort: 8083
         protocol: TCP
+      hermes:
+        port: 8084
+        expose: { default: true }
+        exposedPort: 8084
+        protocol: TCP
       traefik:
         port: 8090
         expose: { default: true }

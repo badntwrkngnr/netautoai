@@ -44,6 +44,7 @@
         - templates/grafana-secret.yaml.j2
         - templates/zabbix-secret.yaml.j2
         - templates/netbox-secret.yaml.j2
+        - templates/hermes-secret.yaml.j2
       no_log: true
 
     - name: Apply Grafana manifests
@@ -99,3 +100,15 @@
         kubeconfig: "{{ kubeconfig_path }}"
         state: present
         src: "{{ playbook_dir }}/../k8s/infrahub/ingressroute.yaml"
+
+    - name: Apply Hermes Agent manifests
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        src: "{{ playbook_dir }}/../k8s/hermes/hermes.yaml"
+
+    - name: Apply Hermes IngressRoute
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        src: "{{ playbook_dir }}/../k8s/hermes/ingressroute.yaml"

@@ -1,0 +1,78 @@
+# Runs containerlab deploy inside k3s. Lab nodes are Docker containers on the
+# host (docker.sock mount). Topology comes from ConfigMap containerlab-topology;
+# state/inventory land in hostPath /opt/containerlab/netautoai-lab.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: containerlab-deploy
+  namespace: automation
+  labels:
+    app: containerlab
+spec:
+  backoffLimit: 2
+  ttlSecondsAfterFinished: 3600
+  template:
+    metadata:
+      labels:
+        app: containerlab-deploy
+    spec:
+      restartPolicy: Never
+      hostNetwork: true
+      hostPID: true
+      containers:
+        - name: containerlab
+          image: ghcr.io/srl-labs/clab:0.68.0
+          securityContext:
+            privileged: true
+          workingDir: /lab/workdir
+          command:
+            - containerlab
+            - deploy
+            - -t
+            - /lab/topology/netautoai-lab.clab.yml
+            - --reconfigure
+          volumeMounts:
+            - name: topology
+              mountPath: /lab/topology
+              readOnly: true
+            - name: workdir
+              mountPath: /lab/workdir
+            - name: docker-sock
+              mountPath: /var/run/docker.sock
+            - name: netns
+              mountPath: /var/run/netns
+            - name: hosts
+              mountPath: /etc/hosts
+            - name: docker-containers
+              mountPath: /var/lib/docker/containers
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: "2"
+              memory: 512Mi
+      volumes:
+        - name: topology
+          configMap:
+            name: containerlab-topology
+        - name: workdir
+          hostPath:
+            path: /opt/containerlab/netautoai-lab
+            type: DirectoryOrCreate
+        - name: docker-sock
+          hostPath:
+            path: /var/run/docker.sock
+            type: Socket
+        - name: netns
+          hostPath:
+            path: /var/run/netns
+            type: Directory
+        - name: hosts
+          hostPath:
+            path: /etc/hosts
+            type: File
+        - name: docker-containers
+          hostPath:
+            path: /var/lib/docker/containers
+            type: Directory

@@ -16,3 +16,12 @@ infrahub_admin_token: "changeme"           # generate: python3 -c "import uuid; 
 infrahub_agent_token: "changeme"           # generate: python3 -c "import uuid; print(uuid.uuid4())"
 infrahub_neo4j_password: "infrahub_neo4j"
 infrahub_rabbitmq_password: "infrahub_rabbitmq"
+
+# Hermes Agent — set at least one LLM provider key (openrouter, anthropic, or openai)
+hermes_api_server_key: "changeme"          # generate: python3 -c "import secrets; print(secrets.token_hex(32))"
+hermes_dashboard_username: "admin"
+hermes_dashboard_password: "changeme"
+hermes_dashboard_secret: "changeme"        # generate: python3 -c "import secrets; print(secrets.token_hex(32))"
+hermes_openrouter_api_key: ""              # optional — https://openrouter.ai/
+hermes_anthropic_api_key: ""               # optional
+hermes_openai_api_key: ""                  # optional

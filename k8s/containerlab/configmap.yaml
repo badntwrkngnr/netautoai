@@ -1,0 +1,9 @@
+# ConfigMap is applied by ansible/deploy_containerlab.yml from the NetBox-generated
+# topology file (containerlab/netautoai-lab.clab.yml). This stub documents the
+# expected name/namespace; do not apply this file directly.
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: containerlab-topology
+  namespace: automation
+data: {}

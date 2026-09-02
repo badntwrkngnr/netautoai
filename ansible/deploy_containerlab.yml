@@ -1,0 +1,117 @@
+---
+- name: Deploy containerlab via k3s
+  hosts: localhost
+  connection: local
+  become: false
+  vars_files:
+    - group_vars/all/vault.yml
+  vars:
+    kubeconfig_path: "{{ playbook_dir }}/.kube/manager-node-k3s.yaml"
+    clab_topology_path: "{{ playbook_dir }}/../containerlab/netautoai-lab.clab.yml"
+    clab_inventory_src: /opt/containerlab/netautoai-lab/clab-netautoai-lab/ansible-inventory.yml
+  pre_tasks:
+    - name: Ensure python kubernetes client is installed
+      block:
+        - ansible.builtin.pip:
+            name:
+              - kubernetes
+              - jsonpatch
+            state: present
+      rescue:
+        - ansible.builtin.pip:
+            name:
+              - kubernetes
+              - jsonpatch
+            state: present
+            extra_args: --break-system-packages
+
+    - name: Ensure pynetbox/pyyaml are installed
+      block:
+        - ansible.builtin.pip:
+            name: [pynetbox, pyyaml]
+            state: present
+      rescue:
+        - ansible.builtin.pip:
+            name: [pynetbox, pyyaml]
+            state: present
+            extra_args: --break-system-packages
+
+    - name: Ensure generated-inventory directory exists
+      ansible.builtin.file:
+        path: "{{ playbook_dir }}/../containerlab/generated-inventory"
+        state: directory
+        mode: "0755"
+
+  tasks:
+    - name: Regenerate topology from NetBox
+      ansible.builtin.command:
+        cmd: >
+          python3 {{ playbook_dir }}/../scripts/netbox_to_containerlab.py
+          --tag containerlab
+          --output {{ clab_topology_path }}
+      environment:
+        NETBOX_URL: "http://netautoai:8081"
+        NETBOX_TOKEN: "{{ netbox_superuser_api_token }}"
+      changed_when: true
+
+    - name: Apply topology ConfigMap
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        definition:
+          apiVersion: v1
+          kind: ConfigMap
+          metadata:
+            name: containerlab-topology
+            namespace: automation
+          data:
+            netautoai-lab.clab.yml: "{{ lookup('file', clab_topology_path) }}"
+
+    - name: Remove previous containerlab deploy Job
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: absent
+        api_version: batch/v1
+        kind: Job
+        name: containerlab-deploy
+        namespace: automation
+        wait: true
+        wait_timeout: 120
+
+    - name: Apply containerlab deploy Job
+      kubernetes.core.k8s:
+        kubeconfig: "{{ kubeconfig_path }}"
+        state: present
+        src: "{{ playbook_dir }}/../k8s/containerlab/job.yaml"
+
+    - name: Wait for containerlab deploy Job to complete
+      kubernetes.core.k8s_info:
+        kubeconfig: "{{ kubeconfig_path }}"
+        api_version: batch/v1
+        kind: Job
+        name: containerlab-deploy
+        namespace: automation
+      register: clab_job
+      until: >-
+        clab_job.resources | length > 0 and
+        (clab_job.resources[0].status.succeeded | default(0) | int >= 1 or
+         clab_job.resources[0].status.failed | default(0) | int >= 1)
+      retries: 60
+      delay: 10
+
+    - name: Fail if containerlab deploy Job did not succeed
+      ansible.builtin.fail:
+        msg: "containerlab-deploy Job failed — check logs: kubectl logs -n automation -l app=containerlab-deploy"
+      when: clab_job.resources[0].status.succeeded | default(0) | int < 1
+
+- name: Fetch containerlab Ansible inventory from manager node
+  hosts: manager-node
+  become: false
+  vars:
+    clab_inventory_src: /opt/containerlab/netautoai-lab/clab-netautoai-lab/ansible-inventory.yml
+  tasks:
+    - name: Fetch containerlab-generated Ansible inventory
+      ansible.builtin.fetch:
+        src: "{{ clab_inventory_src }}"
+        dest: "{{ playbook_dir }}/../containerlab/generated-inventory/{{ inventory_hostname }}-inventory.yml"
+        flat: true

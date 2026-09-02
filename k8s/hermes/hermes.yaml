@@ -1,0 +1,91 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata: { name: hermes-data, namespace: automation }
+spec:
+  accessModes: ["ReadWriteOnce"]
+  resources: { requests: { storage: 2Gi } }
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata: { name: hermes-agent, namespace: automation }
+spec:
+  replicas: 1
+  strategy: { type: Recreate }
+  selector: { matchLabels: { app: hermes-agent } }
+  template:
+    metadata: { labels: { app: hermes-agent } }
+    spec:
+      securityContext:
+        fsGroup: 10000
+      containers:
+        - name: hermes
+          image: nousresearch/hermes-agent:latest
+          args: ["gateway", "run"]
+          ports:
+            - { name: gateway, containerPort: 8642 }
+            - { name: dashboard, containerPort: 9119 }
+          env:
+            - { name: HERMES_UID, value: "10000" }
+            - { name: HERMES_GID, value: "10000" }
+            - { name: HERMES_DASHBOARD, value: "1" }
+            - { name: API_SERVER_ENABLED, value: "true" }
+            - { name: API_SERVER_HOST, value: "0.0.0.0" }
+            - name: API_SERVER_KEY
+              valueFrom: { secretKeyRef: { name: hermes-secrets, key: api-server-key } }
+            - name: HERMES_DASHBOARD_BASIC_AUTH_USERNAME
+              valueFrom: { secretKeyRef: { name: hermes-secrets, key: dashboard-username } }
+            - name: HERMES_DASHBOARD_BASIC_AUTH_PASSWORD
+              valueFrom: { secretKeyRef: { name: hermes-secrets, key: dashboard-password } }
+            - name: HERMES_DASHBOARD_BASIC_AUTH_SECRET
+              valueFrom: { secretKeyRef: { name: hermes-secrets, key: dashboard-secret } }
+            - name: INFRAHUB_ADDRESS
+              value: "http://infrahub-infrahub-server.automation.svc.cluster.local:8000"
+            - name: INFRAHUB_API_TOKEN
+              valueFrom: { secretKeyRef: { name: hermes-secrets, key: infrahub-api-token } }
+            - name: OPENROUTER_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: openrouter-api-key
+                  optional: true
+            - name: ANTHROPIC_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: anthropic-api-key
+                  optional: true
+            - name: OPENAI_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: hermes-secrets
+                  key: openai-api-key
+                  optional: true
+          volumeMounts:
+            - { name: data, mountPath: /opt/data }
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "2"
+              memory: 2Gi
+          livenessProbe:
+            httpGet: { path: /health, port: gateway }
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          readinessProbe:
+            httpGet: { path: /health, port: gateway }
+            initialDelaySeconds: 30
+            periodSeconds: 10
+      volumes:
+        - name: data
+          persistentVolumeClaim: { claimName: hermes-data }
+---
+apiVersion: v1
+kind: Service
+metadata: { name: hermes-agent, namespace: automation }
+spec:
+  selector: { app: hermes-agent }
+  ports:
+    - { name: gateway, port: 8642, targetPort: gateway }
+    - { name: dashboard, port: 9119, targetPort: dashboard }

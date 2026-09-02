@@ -17,5 +17,9 @@ ansible/.kube/
 ansible/.infrahub-values.yaml
 ansible/.infrahub-values.yaml.example
 
+# containerlab (generated)
+containerlab/netautoai-lab.clab.yml
+containerlab/generated-inventory/*.yml
+
 # AI
 .kimchi/
