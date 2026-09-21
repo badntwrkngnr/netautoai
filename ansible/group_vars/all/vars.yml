@@ -1,1 +1,13 @@
-   clab_lab_vm_ip: "192.168.3.251"
+# k3s_version: "v1.31.4+k3s1"   # pin for reproducible installs; omit for latest stable
+# k3s_channel: stable
+# k3s_disable: []                 # e.g. ["traefik"] once you settle on an ingress strategy
+
+# --- containerlab (shared by the manager and lab groups) ---
+# Mgmt subnet of the lab; must match MGMT_SUBNET in scripts/netbox_to_containerlab.py
+clab_mgmt_subnet: 172.20.20.0/24
+# Manager VM LAN IP (same address the `common` role pins in rc.local)
+clab_manager_ip: 192.168.3.252
+# LAN IP of the lab VM (= lab_vm_ip_address in Terraform, without the /prefix).
+# The `common` role routes clab_mgmt_subnet via this address so k3s pods can
+# reach lab nodes.
+clab_lab_vm_ip: "192.168.3.251"
