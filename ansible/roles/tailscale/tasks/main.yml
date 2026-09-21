@@ -44,6 +44,8 @@
       --accept-routes
       --accept-dns=true
       --hostname={{ tailscale_hostname | default('netautoai') }}
+  no_log: true
+  
   register: tailscale_up_result
   failed_when: tailscale_up_result.rc != 0
   when: >

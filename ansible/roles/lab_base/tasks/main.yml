@@ -15,6 +15,7 @@
       - iptables
       - python3-pip
       - iproute2
+      - qemu-guest-agent
     state: present
 
 - name: Allow SSH through ufw
@@ -26,3 +27,8 @@
   community.general.ufw:
     state: enabled
     policy: deny
+
+- name: Start QEMU guest agent
+  ansible.builtin.systemd:
+    name: qemu-guest-agent
+    state: started
