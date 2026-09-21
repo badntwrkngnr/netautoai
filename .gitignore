@@ -26,3 +26,7 @@ containerlab/generated-inventory/*.yml
 
 # AI
 .kimchi/
+# OS / Python
+.DS_Store
+__pycache__/
+*.pyc

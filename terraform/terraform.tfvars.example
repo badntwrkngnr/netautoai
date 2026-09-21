@@ -17,6 +17,9 @@ vm_disk_size = 32
 vm_ip_address = "192.168.1.100/24"
 vm_ip_gateway = "192.168.1.1"
 
+lab_vm_ip_address = "192.168.1.60/24"
+lab_vm_ip_gateway = "192.168.1.1"
+
 dns_servers = ["1.1.1.1", "8.8.8.8"]
 
 ci_user = "debian"

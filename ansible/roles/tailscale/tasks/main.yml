@@ -43,7 +43,7 @@
       --authkey={{ tailscale_authkey }}
       --accept-routes
       --accept-dns=true
-      --hostname=netautoai
+      --hostname={{ tailscale_hostname | default('netautoai') }}
   register: tailscale_up_result
   failed_when: tailscale_up_result.rc != 0
   when: >
