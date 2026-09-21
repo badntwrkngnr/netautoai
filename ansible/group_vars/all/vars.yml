@@ -1,2 +1,1 @@
-clab_mgmt_subnet: 172.20.20.0/24
-clab_manager_ip: 192.168.3.252
+   clab_lab_vm_ip: "192.168.3.251"
