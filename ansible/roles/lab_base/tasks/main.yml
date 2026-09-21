@@ -1,0 +1,28 @@
+---
+
+- name: Update apt cache
+  ansible.builtin.apt:
+    update_cache: true
+    cache_valid_time: 3600
+
+- name: Install base packages
+  ansible.builtin.apt:
+    name:
+      - curl
+      - ca-certificates
+      - gnupg
+      - ufw
+      - iptables
+      - python3-pip
+      - iproute2
+    state: present
+
+- name: Allow SSH through ufw
+  community.general.ufw:
+    rule: allow
+    name: OpenSSH
+
+- name: Enable ufw (default deny incoming)
+  community.general.ufw:
+    state: enabled
+    policy: deny

@@ -1,0 +1,16 @@
+#!/bin/sh
+# Managed by Ansible. Allows routed traffic between the allowed sources and
+# the containerlab mgmt subnet through Docker's DOCKER-USER chain.
+set -eu
+
+# Docker adopts the chain if it already exists; creating it early avoids a race.
+iptables -N DOCKER-USER 2>/dev/null || true
+
+ensure() {
+  iptables -C DOCKER-USER "$@" 2>/dev/null || iptables -I DOCKER-USER "$@"
+}
+
+{% for src in clab_allowed_sources %}
+ensure -s {{ src }} -d {{ clab_mgmt_subnet }} -j ACCEPT
+ensure -s {{ clab_mgmt_subnet }} -d {{ src }} -j ACCEPT
+{% endfor %}

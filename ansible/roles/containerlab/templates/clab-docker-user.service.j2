@@ -1,0 +1,14 @@
+# Managed by Ansible.
+[Unit]
+Description=Allow routed access to the containerlab mgmt subnet (DOCKER-USER)
+After=docker.service
+Requires=docker.service
+PartOf=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/local/sbin/clab-docker-user.sh
+
+[Install]
+WantedBy=multi-user.target

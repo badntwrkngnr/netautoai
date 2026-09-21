@@ -1,0 +1,43 @@
+---
+
+- name: Install containerlab {{ clab_version }} from the GitHub release .deb
+  ansible.builtin.apt:
+    deb: "https://github.com/srl-labs/containerlab/releases/download/v{{ clab_version }}/containerlab_{{ clab_version }}_linux_amd64.deb"
+    state: present
+
+- name: Raise inotify limits
+  ansible.posix.sysctl:
+    name: "{{ item.key }}"
+    value: "{{ item.value }}"
+    sysctl_file: /etc/sysctl.d/99-containerlab.conf
+    sysctl_set: true
+    state: present
+    reload: true
+  loop: "{{ clab_sysctls | dict2items }}"
+
+- name: Ensure containerlab workdir exists
+  ansible.builtin.file:
+    path: "{{ clab_workdir }}"
+    state: directory
+    mode: "0755"
+
+- name: Install DOCKER-USER rules script
+  ansible.builtin.template:
+    src: clab-docker-user.sh.j2
+    dest: /usr/local/sbin/clab-docker-user.sh
+    mode: "0755"
+  notify: restart clab-docker-user
+
+- name: Install DOCKER-USER rules systemd unit
+  ansible.builtin.template:
+    src: clab-docker-user.service.j2
+    dest: /etc/systemd/system/clab-docker-user.service
+    mode: "0644"
+  notify: restart clab-docker-user
+
+- name: Enable and start clab-docker-user
+  ansible.builtin.systemd:
+    name: clab-docker-user
+    enabled: true
+    state: started
+    daemon_reload: true

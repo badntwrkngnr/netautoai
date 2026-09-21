@@ -1,0 +1,10 @@
+---
+
+- name: Bootstrap containerlab lab node
+  hosts: lab
+  become: true
+  roles:
+    - lab_base
+    - docker
+    - tailscale
+    - containerlab
